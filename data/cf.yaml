@@ -1,0 +1,9 @@
+path: ../datasets/cfimg  # dataset root dir
+train: images  # train images (relative to 'path') 128 images
+val: images  # val images (relative to 'path') 128 images
+test:  # test images (optional)
+
+# Classes
+names:
+  0: head
+  #1: body
