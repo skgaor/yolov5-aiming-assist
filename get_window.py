@@ -5,6 +5,7 @@ import cv2
 import win32gui
 import win32con
 import numpy as np
+
 hwnd_title = dict()
 
 
@@ -40,7 +41,7 @@ def get_hwnd_list():
 
 if __name__ == '__main__':
 
-    #获取窗口名
+    # 获取窗口名
     hwnd_title = dict()
     win32gui.EnumWindows(get_all_hwnd, 0)
     hwnds = [value for value in hwnd_title.values() if value]
@@ -50,16 +51,16 @@ if __name__ == '__main__':
     window_name = hwnds[x - 1]
     #print(window_name)
 
-    #获取屏幕分辨率
+    # 获取屏幕分辨率
     sct = mss.mss()
     screen_size = sct.monitors[0]
     print(screen_size)
 
-    #获取监测窗口大小
+    # 获取监测窗口大小
     game_size = get_screen_size(window_name, screen_number=0)
     print(game_size)
 
-    #监测窗口
+    # 监测窗口
     screen_width = screen_size['width']
     screen_height = screen_size['height']
     monitor_width = screen_width // 5
@@ -80,7 +81,7 @@ if __name__ == '__main__':
     # 初始化计时器和帧数计数器
     start_time = time.time()
     # 定义编码器和创建 VideoWriter 对象
-    save_video = True
+    save_video = False
     video_name = time.strftime("%Y%m%d-%H%M%S", time.localtime(start_time))
     video_name = f"{video_name}.mp4"
     video_dir = video_name

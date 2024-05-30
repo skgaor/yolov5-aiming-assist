@@ -4,7 +4,7 @@ import time
 import pynput.mouse
 import torch
 import pathlib
-from mouse.mouse import mouse_xy
+from mouse.mouse import mouse_xy, click_mouse_button
 from models.common import DetectMultiBackend
 from utils.general import (check_img_size, non_max_suppression, scale_boxes, xyxy2xywh)
 from utils.plots import Annotator, colors
@@ -102,6 +102,7 @@ def aim_lock(xy_list, mouse, left, top, width, height):
     dx = (x - mouse_x) * factor
     dy = (y - mouse_y) * factor
     mouse_xy(dx * speed, dy * speed, True)
+    click_mouse_button(1)
 
 
 def on_click(x, y, button, pressed):
@@ -168,7 +169,7 @@ if __name__ == '__main__':
     # 鼠标部分
     LOCK_MOUSE = False  # 锁定开关
     factor = 100 / 381  # 移动距离系数
-    speed = 0.8  # 鼠标移动速度，防止抖动，建议小于1
+    speed = 1  # 鼠标移动速度，防止抖动，建议小于1
     # 获取屏幕缩放比例（150%意味着比例是1.5）
     scaling_factor = 1
     mouse_controller = pynput.mouse.Controller()
