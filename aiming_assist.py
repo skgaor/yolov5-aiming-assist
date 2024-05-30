@@ -1,11 +1,9 @@
 import os
 import sys
 import time
-
 import pynput.mouse
 import torch
-
-from pathlib import Path
+import pathlib
 from mouse.mouse import mouse_xy
 from models.common import DetectMultiBackend
 from utils.general import (check_img_size, non_max_suppression, scale_boxes, xyxy2xywh)
@@ -13,7 +11,8 @@ from utils.plots import Annotator, colors
 from utils.augmentations import letterbox
 from utils.torch_utils import select_device
 from get_window import *
-
+from pathlib import Path
+pathlib.PosixPath = pathlib.WindowsPath
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
 if str(ROOT) not in sys.path:
@@ -114,7 +113,7 @@ def on_click(x, y, button, pressed):
 
 if __name__ == '__main__':
     # 模型加载部分参数
-    weights = ROOT / 'runs/train/exp/weights/best.pt'  # model path or triton URL
+    weights = ROOT / 'runs/train/exp7/weights/best.pt'  # model path or triton URL
     data = ROOT / 'data/cf.yaml'  # dataset.yaml path
     half = False  # use FP16 half-precision inference
     #预测部分参数
