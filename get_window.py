@@ -29,8 +29,8 @@ def get_screen_size(window, screen_number=0):
     width = right - left
     height = bottom - top
     # 定义捕获区域
-    #monitor = {"top": top, "left": left, "width": width, "height": height}
-    return ' '.join(map(str, [screen_number, left, top, width, height]))
+    monitor = {"top": top, "left": left, "width": width, "height": height}
+    return monitor
 
 
 def get_hwnd_list():
@@ -57,8 +57,8 @@ if __name__ == '__main__':
     print(screen_size)
 
     # 获取监测窗口大小
-    game_size = get_screen_size(window_name, screen_number=0)
-    print(game_size)
+    monitor = get_screen_size(window_name, screen_number=0)
+    print(monitor)
 
     # 监测窗口
     screen_width = screen_size['width']
@@ -66,13 +66,6 @@ if __name__ == '__main__':
     monitor_width = screen_width // 5
     monitor_height = screen_height // 5
     sct = mss.mss()
-    sz = game_size.split(' ')
-    monitor = {
-        'left': int(sz[1]),
-        'top': int(sz[2]),
-        'width': int(sz[3]),
-        'height': int(sz[4])
-    }
     window_name = 'GAME monitor'
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(window_name, monitor_width, monitor_height)

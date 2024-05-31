@@ -138,24 +138,16 @@ if __name__ == '__main__':
     print('当前屏幕分辨率：', screen_size['width'], 'x', screen_size['height'])
 
     # 获取监测窗口大小
-    game_size = get_screen_size(window_name, screen_number=0)
-    print(game_size)
-    print('监测窗口大小：', game_size)
+    monitor = get_screen_size(window_name, screen_number=0)
+    print('监测窗口大小：', monitor['width'],'x',monitor['height'])
 
     # 监测窗口
     show_monitor = True
     screen_width = screen_size['width']
     screen_height = screen_size['height']
-    monitor_width = screen_width // 3
-    monitor_height = screen_height // 3
+    monitor_width = monitor['width'] // 3
+    monitor_height = monitor['height'] // 3
     sct = mss.mss()
-    sz = game_size.split(' ')
-    monitor = {
-        'left': int(sz[1]),
-        'top': int(sz[2]),
-        'width': int(sz[3]),
-        'height': int(sz[4])
-    }
     if show_monitor:
         monitor_name = 'GAME monitor'
         cv2.namedWindow(monitor_name, cv2.WINDOW_NORMAL)

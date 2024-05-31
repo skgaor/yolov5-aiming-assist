@@ -1,3 +1,4 @@
+import pyautogui
 import pynput
 import time
 from config import *
@@ -31,8 +32,10 @@ print(mouse_x)
 print(mouse_y)
 #factor=1
 factor=100/381
-
-while True:
+width, height = pyautogui.size()
+print(width)
+print(height)
+'''while True:
     #lock
     #mouse_controller = pynput.mouse.Controller()
     mouse_x, mouse_y = get_mouse_position(mouse_controller)
@@ -44,6 +47,6 @@ while True:
     print('dy:',dy)
     print()
     mouse_xy(dx*speed, dy*speed, False)
-    time.sleep(0.05)
+    time.sleep(0.05)'''
 
 
