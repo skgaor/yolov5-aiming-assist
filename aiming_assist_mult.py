@@ -7,12 +7,12 @@ import torch
 import pathlib
 import multiprocessing
 from multiprocessing import Manager
-from mouse.mouse import mouse_xy, click_mouse_button
 from models.common import DetectMultiBackend
 from utils.general import (check_img_size, non_max_suppression, scale_boxes, xyxy2xywh)
 from utils.plots import Annotator, colors
 from utils.augmentations import letterbox
 from utils.torch_utils import select_device
+from mouse.mouse import mouse_xy, click_mouse_button
 from get_window import *
 from pathlib import Path
 
@@ -198,7 +198,10 @@ def show_img(running, monitor, get_model):
     start_time = time.time()
     video_name = time.strftime("%Y%m%d-%H%M%S", time.localtime(start_time))
     video_name = f"{video_name}.mp4"
-    video_dir = ROOT / 'video' / video_name
+    video_dir = ROOT / 'video'
+    if not os.path.exists(video_dir):
+        os.makedirs(video_dir)
+    video_dir = video_dir / video_name
 
     # 获取屏幕分辨率
     screen_width, screen_height = pyautogui.size()

@@ -172,10 +172,14 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # 定义编码器和创建 VideoWriter 对象
-    save_video = True
+    save_video = False
     video_name = time.strftime("%Y%m%d-%H%M%S", time.localtime(start_time))
     video_name = f"{video_name}.mp4"
-    video_dir = ROOT / 'video' / video_name
+    # 检查并创建视频目录
+    video_dir = ROOT / 'video'
+    if not os.path.exists(video_dir):
+        os.makedirs(video_dir)
+    video_dir = video_dir / video_name
     if save_video:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 使用mp4v 编码器
         out = cv2.VideoWriter(str(video_dir), fourcc, 20.0, (monitor["width"], monitor["height"]))
