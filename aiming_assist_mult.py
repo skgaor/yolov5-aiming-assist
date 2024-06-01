@@ -1,11 +1,12 @@
 import os
 import sys
 import time
-
 import pyautogui
 import pynput.mouse
 import torch
 import pathlib
+import multiprocessing
+from multiprocessing import Manager
 from mouse.mouse import mouse_xy, click_mouse_button
 from models.common import DetectMultiBackend
 from utils.general import (check_img_size, non_max_suppression, scale_boxes, xyxy2xywh)
@@ -26,7 +27,7 @@ debug = True
 
 def loading_model():
     # 模型加载部分参数
-    weights = ROOT / 'best.pt'  # model path or triton URL
+    weights = ROOT / 'runs/train/exp8/weights/best.pt'  # model path or triton URL
     data = ROOT / 'data/cf.yaml'  # dataset.yaml path
     half = False  # use FP16 half-precision inference
     device = ''  # cuda device, i.e. 0 or 0,1,2,3 or cpu
@@ -128,16 +129,15 @@ def on_click(x, y, button, pressed):
 
 
 # 线程打包
-from multiprocessing import Manager
-import multiprocessing
-
-
 def get_screen_img(running, original_image, monitor):
+    print('正在启动屏幕获取模块...')
     sct = mss.mss()
     while running.value:
         img = sct.grab(monitor)
         # 传输屏幕数据
         original_image['img'] = img
+
+    print('屏幕获取模块已关闭')
 
 
 def start_model(running, original_image, monitor, to_monitor, to_mouse):
@@ -150,17 +150,22 @@ def start_model(running, original_image, monitor, to_monitor, to_mouse):
         im, im0 = loderdata(img, stride, pt, imgsz)
         pred, im = pre_img(im, model)
         result, xy_list = get_result(pred, im, im0, names, monitor)
-        to_mouse.send(xy_list)
         # 计算并显示FPS
         now = time.time()
         elapsed_time = now - start_time
-        fps = 1 / elapsed_time
+        fps = 1 / elapsed_time if elapsed_time > 0 else float('inf')
         start_time = now
-        to_monitor.send((result, fps))
+        try:
+            to_mouse.send(xy_list)
+            to_monitor.send((result, fps))
+        except BrokenPipeError:
+            break
         #print('FPS:', fps)
+    print('模型模块已关闭')
 
 
 def mouse_control(running, monitor, lock_mouse, get_model):
+    print('正在启动鼠标控制模块...')
     # 鼠标部分
     mouse_controller = pynput.mouse.Controller()
     while running.value:
@@ -170,6 +175,8 @@ def mouse_control(running, monitor, lock_mouse, get_model):
                 aim_lock(xy_list, mouse_controller, **monitor)
         else:
             pass
+    get_model.close()
+    print('鼠标控制模块已关闭')
 
 
 def user_control(LOCK_MOUSE):
@@ -184,6 +191,7 @@ def user_control(LOCK_MOUSE):
 
 
 def show_img(running, monitor, get_model):
+    print('正在启动监视窗口模块...')
     # 定义编码器和创建 VideoWriter 对象
     show_monitor = True
     save_video = False
@@ -224,11 +232,14 @@ def show_img(running, monitor, get_model):
             if k % 256 == 27:
                 if save_video:
                     out.release()
-                cv2.destroyAllWindows()
                 print('exit monitor...')
                 running.value = False
+                break
         else:
             pass
+    cv2.destroyAllWindows()
+    get_model.close()
+    print('监视窗口模块已关闭')
 
 
 if __name__ == '__main__':
@@ -251,7 +262,6 @@ if __name__ == '__main__':
         print(i + 1, ' ' + hwnds[i])
     x = int(input('请选择需要监测的窗口'))
     window_name = hwnds[x - 1]  # 被监测的窗口名
-
     # 获取监测的窗口大小
     monitor.update(get_screen_size(window_name))
     print('游戏窗口大小：', monitor['width'], 'x', monitor['height'])
@@ -261,21 +271,21 @@ if __name__ == '__main__':
     model_process = multiprocessing.Process(target=start_model,
                                             args=(running, original_image, monitor, send_res, send_xylist))
     mouse_process = multiprocessing.Process(target=mouse_control, args=(running, monitor, LOCK_MOUSE, get_xylist))
-    #user_process = multiprocessing.Process(target=user_control, args=(LOCK_MOUSE))
+    # user_process = multiprocessing.Process(target=user_control, args=(LOCK_MOUSE))
     show_monitor_process = multiprocessing.Process(target=show_img, args=(running, monitor, get_res))
 
     # 启动进程
     get_screen_process.start()
     model_process.start()
     mouse_process.start()
-    #user_process.start()
+    # user_process.start()
     show_monitor_process.start()
 
     # 等待结束
     get_screen_process.join()
     model_process.join()
     mouse_process.join()
-    #user_process.join()
+    # user_process.join()
     show_monitor_process.join()
 
     print('感谢使用')

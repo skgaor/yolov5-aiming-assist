@@ -1,4 +1,4 @@
-import pyautogui
+'''import pyautogui
 import pynput
 import time
 from config import *
@@ -34,7 +34,7 @@ print(mouse_y)
 factor=100/381
 width, height = pyautogui.size()
 print(width)
-print(height)
+print(height)'''
 '''while True:
     #lock
     #mouse_controller = pynput.mouse.Controller()
@@ -48,5 +48,39 @@ print(height)
     print()
     mouse_xy(dx*speed, dy*speed, False)
     time.sleep(0.05)'''
+import multiprocessing
+import time
+
+def sender(conn):
+    for i in range(100):
+        conn.send(f"Message {i}")
+        print(f"Sent: Message {i}")
+        time.sleep(0.1)
+    conn.send("END")
+    conn.close()
+
+def receiver(conn):
+    while True:
+        msg = conn.recv()
+        if msg == "END":
+            break
+        print(f"Received: {msg}")
+        time.sleep(1)
+    conn.close()
+
+if __name__ == "__main__":
+    parent_conn, child_conn = multiprocessing.Pipe()
+
+    sender_process = multiprocessing.Process(target=sender, args=(parent_conn,))
+    receiver_process = multiprocessing.Process(target=receiver, args=(child_conn,))
+
+    sender_process.start()
+    receiver_process.start()
+
+    sender_process.join()
+    receiver_process.join()
+
+    print("Main process has finished.")
+
 
 
