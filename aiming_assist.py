@@ -114,7 +114,7 @@ def on_click(x, y, button, pressed):
 
 if __name__ == '__main__':
     # 模型加载部分参数
-    weights = ROOT / 'runs/train/exp7/weights/best.pt'  # model path or triton URL
+    weights = ROOT / 'best.pt'  # model path or triton URL
     data = ROOT / 'data/cf.yaml'  # dataset.yaml path
     half = False  # use FP16 half-precision inference
     #预测部分参数

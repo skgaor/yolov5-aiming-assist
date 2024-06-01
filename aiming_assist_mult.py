@@ -26,7 +26,7 @@ debug = True
 
 def loading_model():
     # 模型加载部分参数
-    weights = ROOT / 'runs/train/exp7/weights/best.pt'  # model path or triton URL
+    weights = ROOT / 'best.pt'  # model path or triton URL
     data = ROOT / 'data/cf.yaml'  # dataset.yaml path
     half = False  # use FP16 half-precision inference
     device = ''  # cuda device, i.e. 0 or 0,1,2,3 or cpu
