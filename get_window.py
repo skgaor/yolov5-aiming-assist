@@ -29,7 +29,7 @@ def get_screen_size(window, screen_number=0):
     width = right - left
     height = bottom - top
     # 定义捕获区域
-    monitor = {"top": top, "left": left, "width": width, "height": height}
+    monitor = {"left": left, "top": top, "width": width, "height": height}
     return monitor
 
 

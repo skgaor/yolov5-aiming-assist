@@ -1,6 +1,6 @@
 import os
 import sys
-import time
+import pyautogui
 import pynput.mouse
 import torch
 import pathlib
@@ -12,6 +12,7 @@ from utils.augmentations import letterbox
 from utils.torch_utils import select_device
 from get_window import *
 from pathlib import Path
+
 pathlib.PosixPath = pathlib.WindowsPath
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -55,7 +56,7 @@ def pre_img(im, model):
     return pred, im
 
 
-def get_result(pred, im, im0s, names, monitor):
+def get_result(pred, im, im0s, names):
     im0 = im0s.copy()
     gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
     annotator = Annotator(im0, line_width=line_thickness, example=str(names))
@@ -102,7 +103,8 @@ def aim_lock(xy_list, mouse, left, top, width, height):
     dx = (x - mouse_x) * factor
     dy = (y - mouse_y) * factor
     mouse_xy(dx * speed, dy * speed, True)
-    click_mouse_button(1)
+    if auto_fire:
+        click_mouse_button(1)
 
 
 def on_click(x, y, button, pressed):
@@ -110,6 +112,22 @@ def on_click(x, y, button, pressed):
     if pressed and button == button.x2:
         LOCK_MOUSE = not LOCK_MOUSE
         print('LOCK_MOUSE:', LOCK_MOUSE)
+
+
+def zoom_window(scale_factor, left, top, width, height):
+    # 计算窗口中心
+    center_x = left + width / 2
+    center_y = top + height / 2
+
+    # 计算新的宽高
+    new_width = int(width * scale_factor)
+    new_height = int(height * scale_factor)
+
+    # 计算新的左上角坐标
+    new_left = int(center_x - new_width / 2)
+    new_top = int(center_y - new_height / 2)
+
+    return {'left': new_left, 'top': new_top, 'width': new_width, 'height': new_height}
 
 
 if __name__ == '__main__':
@@ -133,20 +151,20 @@ if __name__ == '__main__':
     window_name = hwnds[x - 1]  # 被监测的窗口名
 
     # 获取屏幕分辨率
-    sct = mss.mss()
-    screen_size = sct.monitors[0]
-    print('当前屏幕分辨率：', screen_size['width'], 'x', screen_size['height'])
+    screen_width, screen_height = pyautogui.size()
+    print('当前屏幕分辨率：', screen_width, 'x', screen_height)
 
+    # 窗口识别区域
+    zoom_factor = 0.5  # 建议调整至运行帧率在20帧左右，否则有封号的风险,越小识别速度越快
     # 获取监测窗口大小
-    monitor = get_screen_size(window_name, screen_number=0)
-    print('监测窗口大小：', monitor['width'],'x',monitor['height'])
-
+    monitor = get_screen_size(window_name)
+    print('监测窗口大小：', monitor['width'], 'x', monitor['height'])
+    # 只识别中间区域，防抖动
+    monitor = zoom_window(zoom_factor, **monitor)
     # 监测窗口
     show_monitor = True
-    screen_width = screen_size['width']
-    screen_height = screen_size['height']
-    monitor_width = monitor['width'] // 3
-    monitor_height = monitor['height'] // 3
+    monitor_width = screen_width // 3
+    monitor_height = screen_height // 3
     sct = mss.mss()
     if show_monitor:
         monitor_name = 'GAME monitor'
@@ -155,11 +173,12 @@ if __name__ == '__main__':
         # 获取监测窗口句柄
         monitor_handle = win32gui.FindWindow(None, monitor_name)
 
-    # yolo部分
+    # yolo模型加载部分
     model, stride, names, pt, imgsz = loading_model()
 
     # 鼠标部分
     LOCK_MOUSE = False  # 锁定开关
+    auto_fire = False  # 自动开火
     factor = 100 / 381  # 移动距离系数
     speed = 1  # 鼠标移动速度，防止抖动，建议小于1
     # 获取屏幕缩放比例（150%意味着比例是1.5）
@@ -169,8 +188,9 @@ if __name__ == '__main__':
     listener.start()
 
     # 初始化计时器和帧数计数器
+    avr_fps = False
     start_time = time.time()
-
+    count = 1
     # 定义编码器和创建 VideoWriter 对象
     save_video = False
     video_name = time.strftime("%Y%m%d-%H%M%S", time.localtime(start_time))
@@ -190,14 +210,17 @@ if __name__ == '__main__':
         img = sct.grab(monitor)
         im, im0 = loderdata(img, stride, pt, imgsz)
         pred, im = pre_img(im, model)
-        result, xy_list = get_result(pred, im, im0, names, monitor)
+        result, xy_list = get_result(pred, im, im0, names)
         if xy_list and LOCK_MOUSE:
             aim_lock(xy_list, mouse_controller, **monitor)
         # 计算并显示FPS
         now = time.time()
         elapsed_time = now - start_time
-        fps = 1 / elapsed_time
-        start_time = now
+        fps = count / elapsed_time if elapsed_time > 0 else float('inf')
+        if avr_fps:  # 平均帧
+            count += 1
+        else:
+            start_time = now
         #print('FPS:', fps)
         # 设置窗口为置顶
         if show_monitor:

@@ -1,6 +1,5 @@
 import os
 import sys
-import time
 import pyautogui
 import pynput.mouse
 import torch
@@ -67,7 +66,7 @@ def pre_img(im, model):
     return pred, im
 
 
-def get_result(pred, im, im0s, names, monitor):
+def get_result(pred, im, im0s, names):
     line_thickness = 3  # bounding box thickness (pixels)
     im0 = im0s.copy()
     gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
@@ -99,7 +98,8 @@ def get_mouse_position(mouse):
 
 def aim_lock(xy_list, mouse, left, top, width, height):
     factor = 100 / 381  # 移动距离系数
-    speed = 0.5  # 鼠标移动速度，防止抖动，建议小于1
+    speed = 1  # 鼠标移动速度，防止抖动，建议小于1
+    auto_fire = False
     mouse_x, mouse_y = get_mouse_position(mouse)
     best_xy = None
     for xywh in xy_list:
@@ -118,7 +118,8 @@ def aim_lock(xy_list, mouse, left, top, width, height):
     dx = (x - mouse_x) * factor
     dy = (y - mouse_y) * factor
     mouse_xy(dx * speed, dy * speed, True)
-    click_mouse_button(1)
+    if auto_fire:
+        click_mouse_button(1)
 
 
 def on_click(x, y, button, pressed):
@@ -126,6 +127,22 @@ def on_click(x, y, button, pressed):
     if pressed and button == button.x2:
         LOCK_MOUSE.value = not LOCK_MOUSE.value
         print('LOCK_MOUSE:', LOCK_MOUSE.value)
+
+
+def zoom_window(scale_factor, left, top, width, height):
+    # 计算窗口中心
+    center_x = left + width / 2
+    center_y = top + height / 2
+
+    # 计算新的宽高
+    new_width = int(width * scale_factor)
+    new_height = int(height * scale_factor)
+
+    # 计算新的左上角坐标
+    new_left = int(center_x - new_width / 2)
+    new_top = int(center_y - new_height / 2)
+
+    return {'left': new_left, 'top': new_top, 'width': new_width, 'height': new_height}
 
 
 # 线程打包
@@ -144,17 +161,23 @@ def start_model(running, original_image, monitor, to_monitor, to_mouse):
     print('正在启动模型...')
     # yolo部分
     model, stride, names, pt, imgsz = loading_model()
+    # 初始化计时器和帧数计数器
+    avr_fps = False
     start_time = time.time()
+    count = 1
     while running.value:
         img = original_image['img']
         im, im0 = loderdata(img, stride, pt, imgsz)
         pred, im = pre_img(im, model)
-        result, xy_list = get_result(pred, im, im0, names, monitor)
+        result, xy_list = get_result(pred, im, im0, names)
         # 计算并显示FPS
         now = time.time()
         elapsed_time = now - start_time
-        fps = 1 / elapsed_time if elapsed_time > 0 else float('inf')
-        start_time = now
+        fps = count / elapsed_time if elapsed_time > 0 else float('inf')
+        if avr_fps:  # 平均帧
+            count += 1
+        else:
+            start_time = now
         try:
             to_mouse.send(xy_list)
             to_monitor.send((result, fps))
@@ -265,10 +288,13 @@ if __name__ == '__main__':
         print(i + 1, ' ' + hwnds[i])
     x = int(input('请选择需要监测的窗口'))
     window_name = hwnds[x - 1]  # 被监测的窗口名
+    # 窗口识别区域
+    zoom_factor = 0.5  # 建议调整至运行帧率在20帧左右，否则有封号的风险
     # 获取监测的窗口大小
     monitor.update(get_screen_size(window_name))
     print('游戏窗口大小：', monitor['width'], 'x', monitor['height'])
-
+    # 只识别中间区域，防抖动
+    monitor.update(zoom_window(zoom_factor, **monitor))
     # 创建进程
     get_screen_process = multiprocessing.Process(target=get_screen_img, args=(running, original_image, monitor))
     model_process = multiprocessing.Process(target=start_model,
