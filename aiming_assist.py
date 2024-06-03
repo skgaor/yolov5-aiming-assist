@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import pyautogui
 import pynput.mouse
@@ -103,7 +104,8 @@ def aim_lock(xy_list, mouse, left, top, width, height):
     dx = (x - mouse_x) * factor
     dy = (y - mouse_y) * factor
     mouse_xy(dx * speed, dy * speed, True)
-    if auto_fire:
+    random_value = random.random()
+    if random_value < auto_fire:
         click_mouse_button(1)
 
 
@@ -177,8 +179,8 @@ if __name__ == '__main__':
     model, stride, names, pt, imgsz = loading_model()
 
     # 鼠标部分
-    LOCK_MOUSE = False  # 锁定开关
-    auto_fire = False  # 自动开火
+    LOCK_MOUSE = True  # 锁定开关
+    auto_fire = 0  # 自动开火
     factor = 100 / 381  # 移动距离系数
     speed = 1  # 鼠标移动速度，防止抖动，建议小于1
     # 获取屏幕缩放比例（150%意味着比例是1.5）

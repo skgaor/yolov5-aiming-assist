@@ -157,7 +157,7 @@ def get_screen_img(running, original_image, monitor):
     print('屏幕获取模块已关闭')
 
 
-def start_model(running, original_image, monitor, to_monitor, to_mouse):
+def start_model(running, original_image, to_monitor, to_mouse):
     print('正在启动模型...')
     # yolo部分
     model, stride, names, pt, imgsz = loading_model()
@@ -298,7 +298,7 @@ if __name__ == '__main__':
     # 创建进程
     get_screen_process = multiprocessing.Process(target=get_screen_img, args=(running, original_image, monitor))
     model_process = multiprocessing.Process(target=start_model,
-                                            args=(running, original_image, monitor, send_res, send_xylist))
+                                            args=(running, original_image, send_res, send_xylist))
     mouse_process = multiprocessing.Process(target=mouse_control, args=(running, monitor, LOCK_MOUSE, get_xylist))
     # user_process = multiprocessing.Process(target=user_control, args=(LOCK_MOUSE))
     show_monitor_process = multiprocessing.Process(target=show_img, args=(running, monitor, get_res))

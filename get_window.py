@@ -1,11 +1,19 @@
+import os
+import sys
 import time
 import mss
+import pyautogui
 import pygetwindow as gw
 import cv2
 import win32gui
 import win32con
 import numpy as np
-
+from pathlib import Path
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[0]  # YOLOv5 root directory
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))  # add ROOT to PATH
+ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 hwnd_title = dict()
 
 
@@ -52,19 +60,16 @@ if __name__ == '__main__':
     #print(window_name)
 
     # 获取屏幕分辨率
-    sct = mss.mss()
-    screen_size = sct.monitors[0]
-    print(screen_size)
+    screen_width, screen_height = pyautogui.size()
+    print('当前屏幕分辨率：', screen_width, 'x', screen_height)
 
     # 获取监测窗口大小
-    monitor = get_screen_size(window_name, screen_number=0)
+    monitor = get_screen_size(window_name)
     print(monitor)
 
     # 监测窗口
-    screen_width = screen_size['width']
-    screen_height = screen_size['height']
-    monitor_width = screen_width // 5
-    monitor_height = screen_height // 5
+    monitor_width = screen_width // 3
+    monitor_height = screen_height // 3
     sct = mss.mss()
     window_name = 'GAME monitor'
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
@@ -74,12 +79,17 @@ if __name__ == '__main__':
     # 初始化计时器和帧数计数器
     start_time = time.time()
     # 定义编码器和创建 VideoWriter 对象
-    save_video = False
+    save_video = True
     video_name = time.strftime("%Y%m%d-%H%M%S", time.localtime(start_time))
     video_name = f"{video_name}.mp4"
-    video_dir = video_name
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 使用mp4v 编码器
-    out = cv2.VideoWriter(str(video_dir), fourcc, 20.0, (monitor["width"], monitor["height"]))
+    # 检查并创建视频目录
+    video_dir = ROOT / 'video'
+    if not os.path.exists(video_dir):
+        os.makedirs(video_dir)
+    video_dir = video_dir / video_name
+    if save_video:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 使用mp4v 编码器
+        out = cv2.VideoWriter(str(video_dir), fourcc, 20.0, (monitor["width"], monitor["height"]))
 
     while True:
         img = sct.grab(monitor)
@@ -91,7 +101,7 @@ if __name__ == '__main__':
         elapsed_time = now - start_time
         fps = 1 / elapsed_time
         start_time = now
-        #print('FPS:', fps)
+        print('FPS:', fps)
         cv2.putText(img, f'FPS: {fps:.2f}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         cv2.imshow(window_name, img)
         # 写入帧到视频文件
