@@ -89,7 +89,7 @@ def aim_lock(xy_list, mouse, left, top, width, height):
     mouse_x, mouse_y = get_mouse_position(mouse)
     best_xy = None
     for xywh in xy_list:
-        x, y, _, _ = xywh
+        x, y, w, h = xywh
         dist = ((x * width + left - mouse_x) ** 2 + (y * height + top - mouse_y) ** 2) ** 0.5
         if not best_xy:
             best_xy = ((x, y), dist)
@@ -100,7 +100,7 @@ def aim_lock(xy_list, mouse, left, top, width, height):
 
     x, y = best_xy[0]
     x = x * width + left
-    y = y * height + top
+    y = (y * height + top)-h*height*0.5
     dx = (x - mouse_x) * factor
     dy = (y - mouse_y) * factor
     mouse_xy(dx * speed, dy * speed, True)
@@ -161,7 +161,7 @@ if __name__ == '__main__':
     # 获取监测窗口大小
     monitor = get_screen_size(window_name)
     print('监测窗口大小：', monitor['width'], 'x', monitor['height'])
-    # 只识别中间区域，防抖动
+    # 只识别中间区域，提升性能
     monitor = zoom_window(zoom_factor, **monitor)
     # 监测窗口
     show_monitor = True
@@ -180,7 +180,7 @@ if __name__ == '__main__':
 
     # 鼠标部分
     LOCK_MOUSE = True  # 锁定开关
-    auto_fire = 0  # 自动开火
+    auto_fire = 0.5  # 自动开火
     factor = 100 / 381  # 移动距离系数
     speed = 1  # 鼠标移动速度，防止抖动，建议小于1
     # 获取屏幕缩放比例（150%意味着比例是1.5）

@@ -1,4 +1,5 @@
 import os
+import random
 import sys
 import pyautogui
 import pynput.mouse
@@ -98,12 +99,12 @@ def get_mouse_position(mouse):
 
 def aim_lock(xy_list, mouse, left, top, width, height):
     factor = 100 / 381  # 移动距离系数
-    speed = 1  # 鼠标移动速度，防止抖动，建议小于1
-    auto_fire = False
+    speed = 0.9  # 鼠标移动速度，防止抖动，建议小于1
+    auto_fire = 0.5
     mouse_x, mouse_y = get_mouse_position(mouse)
     best_xy = None
     for xywh in xy_list:
-        x, y, _, _ = xywh
+        x, y, w, h = xywh
         dist = ((x * width + left - mouse_x) ** 2 + (y * height + top - mouse_y) ** 2) ** 0.5
         if not best_xy:
             best_xy = ((x, y), dist)
@@ -114,11 +115,13 @@ def aim_lock(xy_list, mouse, left, top, width, height):
 
     x, y = best_xy[0]
     x = x * width + left
-    y = y * height + top
+    y = (y * height + top)-h*height*0.5
     dx = (x - mouse_x) * factor
     dy = (y - mouse_y) * factor
-    mouse_xy(dx * speed, dy * speed, True)
-    if auto_fire:
+    #print('dx:', dx, 'dy:', dy)
+    mouse_xy(dx * speed, dy * speed, False)
+    random_value = random.random()
+    if random_value < auto_fire:
         click_mouse_button(1)
 
 
@@ -179,7 +182,7 @@ def start_model(running, original_image, to_monitor, to_mouse):
         else:
             start_time = now
         try:
-            to_mouse.send(xy_list)
+            to_mouse['xy_list'] = xy_list
             to_monitor.send((result, fps))
         except BrokenPipeError:
             break
@@ -192,13 +195,10 @@ def mouse_control(running, monitor, lock_mouse, get_model):
     # 鼠标部分
     mouse_controller = pynput.mouse.Controller()
     while running.value:
-        if get_model.poll():
-            xy_list = get_model.recv()
-            if xy_list and lock_mouse.value:
-                aim_lock(xy_list, mouse_controller, **monitor)
-        else:
-            pass
-    get_model.close()
+        xy_list = get_model['xy_list']
+        get_model['xy_list'] = []
+        if xy_list and lock_mouse.value:
+            aim_lock(xy_list, mouse_controller, **monitor)
     print('鼠标控制模块已关闭')
 
 
@@ -274,7 +274,8 @@ if __name__ == '__main__':
     LOCK_MOUSE = manager.Value('b', False)  # 锁定开关
     original_image = manager.dict()
     monitor = manager.dict()
-    send_xylist, get_xylist = multiprocessing.Pipe()
+    xy_dict = manager.dict()
+    xy_dict['xy_list'] = []
     send_res, get_res = multiprocessing.Pipe()
 
     listener = pynput.mouse.Listener(on_click=on_click)
@@ -298,8 +299,8 @@ if __name__ == '__main__':
     # 创建进程
     get_screen_process = multiprocessing.Process(target=get_screen_img, args=(running, original_image, monitor))
     model_process = multiprocessing.Process(target=start_model,
-                                            args=(running, original_image, send_res, send_xylist))
-    mouse_process = multiprocessing.Process(target=mouse_control, args=(running, monitor, LOCK_MOUSE, get_xylist))
+                                            args=(running, original_image, send_res, xy_dict))
+    mouse_process = multiprocessing.Process(target=mouse_control, args=(running, monitor, LOCK_MOUSE, xy_dict))
     # user_process = multiprocessing.Process(target=user_control, args=(LOCK_MOUSE))
     show_monitor_process = multiprocessing.Process(target=show_img, args=(running, monitor, get_res))
 
